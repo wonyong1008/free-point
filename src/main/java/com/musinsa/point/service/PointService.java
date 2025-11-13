@@ -77,7 +77,7 @@ public class PointService {
                 .createdAt(now)
                 .build();
 
-        pointEarning = pointEarningRepository.save(pointEarning);
+        pointEarningRepository.save(pointEarning);
 
         // 이력 저장
         Long newBalance = currentBalance + request.getAmount();
@@ -136,8 +136,7 @@ public class PointService {
         String pointKey = generatePointKey();
         LocalDateTime now = LocalDateTime.now();
 
-        // 포인트 사용 처리
-        Long remainingUseAmount = request.getAmount();
+        // 포인트 사용 엔티티 생성
         PointUsage pointUsage = PointUsage.builder()
                 .pointKey(pointKey)
                 .userId(request.getUserId())
@@ -146,9 +145,9 @@ public class PointService {
                 .cancellableAmount(request.getAmount())
                 .createdAt(now)
                 .build();
-        pointUsage = pointUsageRepository.save(pointUsage);
 
-        // 포인트 사용 상세 저장
+        // 포인트 사용 상세 처리 및 연관관계 설정
+        Long remainingUseAmount = request.getAmount();
         for (PointEarning pointEarning : availablePoints) {
             if (remainingUseAmount <= 0) {
                 break;
@@ -156,17 +155,12 @@ public class PointService {
 
             Long useAmount = Math.min(pointEarning.getRemainingAmount(), remainingUseAmount);
             pointEarning.use(useAmount);
-            pointEarningRepository.save(pointEarning);
-
-            PointUsageDetail detail = PointUsageDetail.builder()
-                    .pointUsageId(pointUsage.getId())
-                    .pointEarningId(pointEarning.getId())
-                    .amount(useAmount)
-                    .build();
-            pointUsageDetailRepository.save(detail);
+            pointUsage.addUsageDetail(pointEarning, useAmount); // 캡슐화된 메소드 사용
 
             remainingUseAmount -= useAmount;
         }
+        
+        pointUsageRepository.save(pointUsage); // Cascade 옵션으로 Detail 까지 저장
 
         // 이력 저장
         Long currentBalance = pointEarningRepository.getTotalRemainingAmountByUserId(request.getUserId());
@@ -195,19 +189,20 @@ public class PointService {
             throw new IllegalArgumentException("취소 가능한 포인트가 부족합니다.");
         }
 
-        List<PointUsageDetail> details = pointUsageDetailRepository.findByPointUsageId(pointUsage.getId());
-
         Long remainingCancelAmount = cancelAmount;
         LocalDateTime now = LocalDateTime.now();
+
+        // LIFO 순서로 취소하기 위해 상세 내역을 역순으로 정렬
+        List<PointUsageDetail> details = pointUsage.getUsageDetails().stream()
+            .sorted((d1, d2) -> d2.getId().compareTo(d1.getId()))
+            .toList();
 
         for (PointUsageDetail detail : details) {
             if (remainingCancelAmount <= 0) {
                 break;
             }
 
-            PointEarning pointEarning = pointEarningRepository.findById(detail.getPointEarningId())
-                    .orElseThrow(() -> new IllegalArgumentException("포인트를 찾을 수 없습니다."));
-
+            PointEarning pointEarning = detail.getPointEarning();
             Long cancelFromPoint = Math.min(detail.getAmount(), remainingCancelAmount);
 
             if (pointEarning.isExpired()) {
@@ -225,20 +220,18 @@ public class PointService {
                 pointEarningRepository.save(newPointEarning);
 
                 // 신규 적립 이력 저장
-                Long currentBalance = pointEarningRepository.getTotalRemainingAmountByUserId(pointEarning.getUserId());
+                Long currentBalanceAfterReEarning = pointEarningRepository.getTotalRemainingAmountByUserId(pointEarning.getUserId());
                 saveHistory(pointEarning.getUserId(), PointHistory.PointHistoryType.ACCUMULATE, newPointKey,
-                        null, cancelFromPoint, currentBalance, now);
+                        "사용취소로 인한 재적립", cancelFromPoint, currentBalanceAfterReEarning, now);
             } else {
                 // 만료되지 않은 포인트는 원래 적립으로 복구
                 pointEarning.cancelUsage(cancelFromPoint);
-                pointEarningRepository.save(pointEarning);
             }
 
             remainingCancelAmount -= cancelFromPoint;
         }
 
         pointUsage.cancel(cancelAmount);
-        pointUsageRepository.save(pointUsage);
 
         // 이력 저장
         Long currentBalance = pointEarningRepository.getTotalRemainingAmountByUserId(pointUsage.getUserId());

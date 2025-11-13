@@ -1,12 +1,16 @@
 package com.musinsa.point.domain.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,6 +44,9 @@ public class PointUsage {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @OneToMany(mappedBy = "pointUsage", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PointUsageDetail> usageDetails = new ArrayList<>();
+
     @Builder
     public PointUsage(String pointKey, Long userId, String orderNumber, Long amount,
                       Long cancellableAmount, LocalDateTime createdAt) {
@@ -56,5 +63,15 @@ public class PointUsage {
             throw new IllegalArgumentException("취소 가능한 포인트가 부족합니다.");
         }
         this.cancellableAmount -= cancelAmount;
+    }
+
+    //== 연관관계 편의 및 캡슐화 메소드 ==//
+    public void addUsageDetail(PointEarning pointEarning, Long useAmount) {
+        PointUsageDetail usageDetail = PointUsageDetail.builder()
+            .pointUsage(this)
+            .pointEarning(pointEarning)
+            .amount(useAmount)
+            .build();
+        this.usageDetails.add(usageDetail);
     }
 }

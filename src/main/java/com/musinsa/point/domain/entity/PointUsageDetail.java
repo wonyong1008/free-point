@@ -16,19 +16,21 @@ public class PointUsageDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long pointUsageId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "point_usage_id", nullable = false)
+    private PointUsage pointUsage;
 
-    @Column(nullable = false)
-    private Long pointEarningId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "point_earning_id", nullable = false)
+    private PointEarning pointEarning;
 
     @Column(nullable = false)
     private Long amount;
 
     @Builder
-    public PointUsageDetail(Long pointUsageId, Long pointEarningId, Long amount) {
-        this.pointUsageId = pointUsageId;
-        this.pointEarningId = pointEarningId;
+    public PointUsageDetail(PointUsage pointUsage, PointEarning pointEarning, Long amount) {
+        this.pointUsage = pointUsage;
+        this.pointEarning = pointEarning;
         this.amount = amount;
     }
 }
