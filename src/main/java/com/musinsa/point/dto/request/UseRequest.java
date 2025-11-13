@@ -4,11 +4,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Schema(description = "포인트 사용 요청")
 public class UseRequest {
 
@@ -25,4 +29,3 @@ public class UseRequest {
     @Min(value = 1, message = "사용 금액은 1원 이상이어야 합니다.")
     private Long amount;
 }
-
