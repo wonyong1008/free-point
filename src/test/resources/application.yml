@@ -7,3 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+
+security:
+  jwt:
+    secret: test_secret_for_jwt_please_change

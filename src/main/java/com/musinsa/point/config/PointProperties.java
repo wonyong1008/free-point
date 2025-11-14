@@ -9,21 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "point")
 public class PointProperties {
 
-    private final Security security = new Security();
     private final Expiration expiration = new Expiration();
-
-    @Getter
-    @Setter
-    public static class Security {
-        /**
-         * 고정 API Key. 값이 비어있으면 인증을 비활성화한다.
-         */
-        private String apiKey;
-
-        public boolean isEnabled() {
-            return apiKey != null && !apiKey.isBlank();
-        }
-    }
 
     @Getter
     @Setter

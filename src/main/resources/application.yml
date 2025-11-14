@@ -40,8 +40,12 @@ management:
       show-details: when_authorized
 
 point:
-  security:
-    api-key: ${POINT_API_KEY:}
   expiration:
     cron: ${POINT_EXPIRATION_CRON:0 0 * * * *}
     batch-size: ${POINT_EXPIRATION_BATCH_SIZE:500}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:this_is_dev_secret_please_change}
+    access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY:PT30M}
+    refresh-token-validity: ${JWT_REFRESH_TOKEN_VALIDITY:P14D}

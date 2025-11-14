@@ -5,6 +5,7 @@
 본 프로젝트는 무신사페이먼츠 백엔드 엔지니어 과제 전형의 요구사항에 따라 구현된 무료 포인트 시스템 API입니다.
 
 ### 주요 기능
+- **인증/인가**: 회원가입/로그인을 통해 JWT Access/Refresh Token을 발급받고, 토큰으로 API를 호출합니다.
 - **포인트 적립**: 사용자는 포인트를 적립할 수 있습니다.
 - **포인트 적립 취소**: 특정 적립 내역을 취소할 수 있습니다. (단, 사용되지 않은 경우에만)
 - **포인트 사용**: 주문 시 포인트를 사용할 수 있습니다.
@@ -50,7 +51,14 @@
 
 ## 3. API 명세
 
-API의 기본 경로는 `/api/points` 입니다.
+### 인증 API (`/api/auth`)
+- `POST /signup`: 이메일/비밀번호로 회원가입
+- `POST /login`: 로그인 후 `accessToken`, `refreshToken` 발급
+- `POST /refresh`: 유효한 Refresh Token으로 토큰 재발급
+
+모든 포인트 API는 `Authorization: Bearer {accessToken}` 헤더가 필요합니다.
+
+### 포인트 API (`/api/points`)
 
 ### `POST /api/points/accumulate`
 포인트를 적립합니다.
@@ -114,6 +122,7 @@ API의 기본 경로는 `/api/points` 입니다.
 DB_URL=jdbc:h2:mem:pointdb
 DB_USERNAME=sa
 DB_PASSWORD=
+JWT_SECRET=please_change_this_secret_key
 ```
 
 ### 빌드
