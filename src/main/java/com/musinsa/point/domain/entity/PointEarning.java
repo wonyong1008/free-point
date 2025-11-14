@@ -73,7 +73,11 @@ public class PointEarning {
         this.remainingAmount += cancelAmount;
     }
 
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(this.expirationDate);
+    public boolean isExpired(LocalDateTime now) {
+        return now.isAfter(this.expirationDate);
+    }
+
+    public void expire() {
+        this.remainingAmount = 0L;
     }
 }

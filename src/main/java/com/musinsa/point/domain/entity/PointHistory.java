@@ -53,10 +53,10 @@ public class PointHistory {
     }
 
     public enum PointHistoryType {
-        ACCUMULATE,      // 적립
+        ACCUMULATE,        // 적립
         ACCUMULATE_CANCEL, // 적립 취소
-        USE,             // 사용
-        USE_CANCEL       // 사용 취소
+        USE,               // 사용
+        USE_CANCEL,        // 사용 취소
+        EXPIRE             // 만료
     }
 }
-

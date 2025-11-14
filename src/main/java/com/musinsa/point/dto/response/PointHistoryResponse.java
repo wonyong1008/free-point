@@ -17,7 +17,7 @@ public class PointHistoryResponse {
     @Schema(description = "사용자 ID", example = "1")
     private Long userId;
 
-    @Schema(description = "이력 유형 (ACCUMULATE, ACCUMULATE_CANCEL, USE, USE_CANCEL)", example = "ACCUMULATE")
+    @Schema(description = "이력 유형 (ACCUMULATE, ACCUMULATE_CANCEL, USE, USE_CANCEL, EXPIRE)", example = "ACCUMULATE")
     private String type;
 
     @Schema(description = "포인트 키", example = "ABC123DEF456GHI789")
@@ -35,4 +35,3 @@ public class PointHistoryResponse {
     @Schema(description = "생성일시", example = "2025-11-13T09:29:12")
     private LocalDateTime createdAt;
 }
-
