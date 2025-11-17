@@ -14,7 +14,7 @@
 |---|---|
 |언어/런타임|Java 21, Gradle 8|
 |프레임워크|Spring Boot 3.2 (Web, Data JPA, Validation, Security, Actuator)|
-|DB|H2 (메모리)|
+|DB|H2 (파일 모드)|
 |빌드/검증|JUnit 5, Spring Security Test, QueryDSL|
 |문서화|SpringDoc OpenAPI 3 (Swagger UI)|
 
@@ -84,7 +84,7 @@ Swagger UI에서 `Authorize` 버튼을 눌러 `Bearer <accessToken>`을 입력�
 |GET|`/balance/{userId}`|현재 잔액 조회|
 |GET|`/history/{userId}`|트랜잭션 이력 조회|
 
-필드/응답 예시는 Swagger (`/swagger-ui.html`)와 `src/main/java/com/musinsa/point/dto/**`에서 확인할 수 있습니다.
+필드/응답 예시는 Swagger (`/swagger-ui.html`)와 `point-core/src/main/java/com/musinsa/point/dto/**`에서 확인할 수 있습니다.
 
 ## 6. 실행 방법
 
