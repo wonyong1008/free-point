@@ -115,6 +115,7 @@ java -jar point-batch/build/libs/point-batch-0.0.1-SNAPSHOT.jar &
 - H2 콘솔 : http://localhost:8080/h2-console  
   - JDBC URL: `jdbc:h2:file:./data/pointdb;AUTO_SERVER=TRUE`  
   - User: `sa`
+- 쿼리 로그는 `p6spy` 스타터 덕분에 콘솔에 한 줄 포맷으로 출력되며, 설정은 `application.yml`의 `decorator.datasource.p6spy` 블록에서 제어합니다.
 
 ## 7. 사용 순서 예시
 

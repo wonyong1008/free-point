@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation project(':point-core')
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     runtimeOnly 'com.h2database:h2'
 }

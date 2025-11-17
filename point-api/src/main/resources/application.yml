@@ -21,6 +21,13 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
 
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      logging: slf4j
+      log-format: com.p6spy.engine.logging.format.SingleLineFormat
+
 springdoc:
   api-docs:
     path: /api-docs
