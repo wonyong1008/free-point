@@ -1,0 +1,33 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: point-batch
+  main:
+    web-application-type: servlet
+  datasource:
+    url: ${DB_URL:jdbc:h2:file:./data/pointdb;AUTO_SERVER=TRUE}
+    driver-class-name: org.h2.Driver
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      logging: slf4j
+      log-format: com.p6spy.engine.logging.format.SingleLineFormat
+
+point:
+  expiration:
+    cron: ${POINT_EXPIRATION_CRON:0 0 * * * *}
+    batch-size: ${POINT_EXPIRATION_BATCH_SIZE:500}
+
+server:
+  port: 8081
