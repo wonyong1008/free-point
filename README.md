@@ -25,7 +25,7 @@
   - `PointHistory` : 모든 거래를 ACCUMULATE/USE/USE_CANCEL/EXPIRE 타입으로 기록합니다.
   - `Member` + `RefreshToken` : JWT 인증 주체와 리프레시 토큰 저장소.
 - **Service Layer**
-  - `PointService` : HELP 요구사항(수기 포인트 우선, 만료 시 재적립, 부분 취소 등)을 모두 캡슐화했습니다.
+  - `PointService` : 수기 포인트 우선, 만료 시 재적립, 부분 취소 등을 모두 캡슐화했습니다.
   - `PointExpirationScheduler` : cron 기반 만료 배치, Micrometer 카운터(`point.expire.count`)와 이력 남김.
   - `AuthService` : 회원가입, 로그인, Refresh 토큰 재발급.
 - **Security Layer**
@@ -45,7 +45,6 @@ PointHistory(userId, type, pointKey, balance)
 PointConfig(configKey, configValue)
 ```
 
-> HELP.md에서 요구한 ERD/아키텍처 이미지는 `src/main/resources/`에 PDF/이미지 형태로 포함해 주세요.
 
 ## 3. 인증 흐름
 
@@ -149,6 +148,4 @@ Gradle `test` 태스크로 전체 테스트를 돌릴 수 있습니다.
 
 ## 9. 참고 문서
 
-- `HELP.md` : 공식 요구사항
-- `blue-print.md` : 고도화 작업 내역 및 설계 배경
-- `src/main/resources` : ERD/아키텍처 이미지 첨부 위치 (필수 산출물)
+- `src/main/resources` : ERD/아키텍처 이미지 첨부 위치
