@@ -1,144 +1,153 @@
 # Musinsa Point System
 
-## 1. 프로젝트 개요
+무신사페이먼츠 백엔드 엔지니어 과제를 진행하며 만든 무료 포인트 관리 API입니다.  
+포인트 적립부터 만료까지 전 과정을 추적할 수 있고, JWT 인증/인가까지 넣어 실서비스에서도 곧바로 써도 되는 구조로 정리했습니다.
 
-본 프로젝트는 무신사페이먼츠 백엔드 엔지니어 과제 전형의 요구사항에 따라 구현된 무료 포인트 시스템 API입니다.
+## 1. 모듈 & 기술 스택
 
-### 주요 기능
-- **인증/인가**: 회원가입/로그인을 통해 JWT Access/Refresh Token을 발급받고, 토큰으로 API를 호출합니다.
-- **포인트 적립**: 사용자는 포인트를 적립할 수 있습니다.
-- **포인트 적립 취소**: 특정 적립 내역을 취소할 수 있습니다. (단, 사용되지 않은 경우에만)
-- **포인트 사용**: 주문 시 포인트를 사용할 수 있습니다.
-- **포인트 사용 취소**: 사용한 포인트를 전체 또는 부분 취소할 수 있습니다.
+### 모듈 구성
+- **point-core**: 엔티티, 리포지토리, 핵심 서비스, 공통 설정
+- **point-api**: REST API, 인증, Swagger UI, `PointApplication`
+- **point-batch**: 만료 배치 전용 애플리케이션 (`PointBatchApplication`)
 
-### 개발 환경
-- Java 21
-- Spring Boot 3.x
-- H2 Database
-- Gradle
+|구분|내용|
+|---|---|
+|언어/런타임|Java 21, Gradle 8|
+|프레임워크|Spring Boot 3.2 (Web, Data JPA, Validation, Security, Actuator)|
+|DB|H2 (메모리)|
+|빌드/검증|JUnit 5, Spring Security Test, QueryDSL|
+|문서화|SpringDoc OpenAPI 3 (Swagger UI)|
 
-## 2. ERD (Entity-Relationship Diagram)
+## 2. 아키텍처 & 주요 컴포넌트
 
-엔티티 관계는 다음과 같습니다.
+- **Domain Layer**
+  - `PointEarning/PointUsage/PointUsageDetail` : 적립·사용 단위를 저장하며 만료·복구 로직을 내포합니다.
+  - `PointHistory` : 모든 거래를 ACCUMULATE/USE/USE_CANCEL/EXPIRE 타입으로 기록합니다.
+  - `Member` + `RefreshToken` : JWT 인증 주체와 리프레시 토큰 저장소.
+- **Service Layer**
+  - `PointService` : HELP 요구사항(수기 포인트 우선, 만료 시 재적립, 부분 취소 등)을 모두 캡슐화했습니다.
+  - `PointExpirationScheduler` : cron 기반 만료 배치, Micrometer 카운터(`point.expire.count`)와 이력 남김.
+  - `AuthService` : 회원가입, 로그인, Refresh 토큰 재발급.
+- **Security Layer**
+  - `JwtTokenProvider`, `JwtAuthenticationFilter` : Access Token 생성·검증.
+  - `SecurityProperties` : 토큰 시크릿/만료 시간을 외부 설정으로 분리.
 
-- **`PointConfig`**: 포인트 시스템의 주요 설정값(키-값)을 관리합니다.
-  - `configKey`: 설정 키 (e.g., `MAX_ACCUMULATE_AMOUNT`)
-  - `configValue`: 설정 값
+### ERD (텍스트 버전)
 
-- **`PointEarning`**: 개별 포인트 '적립' 단위를 나타냅니다.
-  - `userId`: 포인트를 소유한 사용자 ID
-  - `amount`: 적립된 총 금액
-  - `remainingAmount`: 사용하고 남은 금액
-  - `expirationDate`: 만료일
-  - `isManual`: 관리자에 의한 수기 지급 여부
+```
+Member (1) ────< RefreshToken
 
-- **`PointUsage`**: 개별 포인트 '사용' 단위를 나타냅니다.
-  - `userId`: 포인트를 사용한 사용자 ID
-  - `orderNumber`: 포인트를 사용한 주문 번호
-  - `amount`: 사용된 총 금액
-  - `cancellableAmount`: 사용 취소 가능한 남은 금액
+Member (1) ────< PointEarning (점포인트)
+PointEarning (1) ────< PointUsageDetail >──── (1) PointUsage
+PointUsage (1) ────< PointUsageDetail
 
-- **`PointUsageDetail`**: 어떤 적립(Earning)이 어떤 사용(Usage)에 얼마나 쓰였는지 연결하는 조인 테이블입니다.
-  - `pointEarningId`: `PointEarning`의 ID (FK)
-  - `pointUsageId`: `PointUsage`의 ID (FK)
-  - `amount`: 해당 관계에서 사용된 금액
+PointHistory(userId, type, pointKey, balance)
+PointConfig(configKey, configValue)
+```
 
-- **`PointHistory`**: 모든 포인트 관련 트랜잭션(적립, 사용, 취소 등)의 로그를 기록합니다.
-  - `type`: 트랜잭션 타입 (e.g., `ACCUMULATE`, `USE`)
-  - `pointKey`: 관련 `PointEarning` 또는 `PointUsage`의 키
-  - `amount`: 변동된 금액
-  - `balance`: 트랜잭션 후의 총 잔액
+> HELP.md에서 요구한 ERD/아키텍처 이미지는 `src/main/resources/`에 PDF/이미지 형태로 포함해 주세요.
 
-## 3. API 명세
+## 3. 인증 흐름
+
+1. `POST /api/auth/signup` : 이메일/비밀번호로 회원가입.
+2. `POST /api/auth/login` : Access/Refresh Token 획득.
+3. `POST /api/auth/refresh` : Refresh Token으로 Access Token 재발급.
+4. 모든 `/api/points/**` 호출 시 `Authorization: Bearer <ACCESS_TOKEN>` 헤더가 필요합니다.
+
+Swagger UI에서 `Authorize` 버튼을 눌러 `Bearer <accessToken>`을 입력하면 인증된 호출을 바로 테스트할 수 있습니다.
+
+## 4. 비즈니스 규칙
+
+|영역|규칙|
+|---|---|
+|적립|1회 1~100,000포인트, 개인 최대 보유량은 `PointConfig`로 조정|
+|만료|기본 365일, 1일 이상 5년 미만. 만료되면 `EXPIRE` 이력과 함께 잔액 0 처리|
+|사용|수기 포인트 우선, 만료 임박 순으로 차감. 주문번호 필수|
+|사용 취소|전체/부분 모두 가능. 만료된 포인트를 취소하면 새 적립으로 되살림|
+|추적성|`PointUsageDetail`로 1원 단위 매핑, `PointHistory`로 모든 거래 기록|
+
+## 5. API 개요
 
 ### 인증 API (`/api/auth`)
-- `POST /signup`: 이메일/비밀번호로 회원가입
-- `POST /login`: 로그인 후 `accessToken`, `refreshToken` 발급
-- `POST /refresh`: 유효한 Refresh Token으로 토큰 재발급
-
-모든 포인트 API는 `Authorization: Bearer {accessToken}` 헤더가 필요합니다.
+|Method|Path|설명|
+|---|---|---|
+|POST|`/signup`|회원가입|
+|POST|`/login`|로그인 및 access/refresh 발급|
+|POST|`/refresh`|Refresh Token으로 재발급|
 
 ### 포인트 API (`/api/points`)
+|Method|Path|설명|
+|---|---|---|
+|POST|`/accumulate`|포인트 적립|
+|POST|`/accumulate/cancel`|적립 취소 (미사용분)|
+|POST|`/use`|주문 시 포인트 사용|
+|POST|`/use/cancel`|사용 취소 (전부/일부)|
+|GET|`/balance/{userId}`|현재 잔액 조회|
+|GET|`/history/{userId}`|트랜잭션 이력 조회|
 
-### `POST /api/points/accumulate`
-포인트를 적립합니다.
+필드/응답 예시는 Swagger (`/swagger-ui.html`)와 `src/main/java/com/musinsa/point/dto/**`에서 확인할 수 있습니다.
 
-**Request Body:**
-```json
-{
-  "userId": 1,
-  "amount": 10000,
-  "isManual": false,
-  "expirationDays": 365
-}
+## 6. 실행 방법
+
+### 1) .env (또는 환경 변수) 작성
 ```
-
-### `POST /api/points/accumulate-cancel`
-포인트 적립을 취소합니다.
-
-**Request Body:**
-```json
-{
-  "pointKey": "GENERATED_POINT_KEY"
-}
-```
-
-### `POST /api/points/use`
-포인트를 사용합니다.
-
-**Request Body:**
-```json
-{
-  "userId": 1,
-  "orderNumber": "ORDER-12345",
-  "amount": 5000
-}
-```
-
-### `POST /api/points/use-cancel`
-포인트 사용을 취소합니다.
-
-**Request Body:**
-```json
-{
-  "pointKey": "GENERATED_POINT_KEY",
-  "amount": 2000
-}
-```
-
-### `GET /api/points/balance/{userId}`
-사용자의 현재 포인트 잔액을 조회합니다.
-
-### `GET /api/points/history/{userId}`
-사용자의 포인트 변동 내역을 조회합니다.
-
-## 4. 빌드 및 실행 방법
-
-### 사전 설정: .env 파일 생성
-애플리케이션을 실행하기 전에, 프로젝트 루트 디렉토리에 `.env` 파일을 생성하고 데이터베이스 접속 정보를 설정해야 합니다.
-
-```
-# .env
-DB_URL=jdbc:h2:mem:pointdb
+DB_URL=jdbc:h2:file:./data/pointdb;AUTO_SERVER=TRUE
 DB_USERNAME=sa
 DB_PASSWORD=
 JWT_SECRET=please_change_this_secret_key
+POINT_EXPIRATION_CRON=0 0 * * * *
+POINT_EXPIRATION_BATCH_SIZE=500
 ```
 
-### 빌드
-프로젝트 루트 디렉토리에서 아래 명령어를 실행하여 프로젝트를 빌드합니다.
+### 2) 실행 순서
 ```bash
 ./gradlew build
-```
+# API 서버 (포트 8080)
+java -jar point-api/build/libs/point-api-0.0.1-SNAPSHOT.jar &
 
-### 실행
-빌드된 JAR 파일을 다음 명령어로 실행합니다.
+# 배치 서버 (포트 8081, 만료 작업)
+java -jar point-batch/build/libs/point-batch-0.0.1-SNAPSHOT.jar &
+```
+- API 서버는 8080, 배치 서버는 `point-batch/src/main/resources/application.yml`에서 8081로 고정해 두었습니다. 두 프로세스를 서로 다른 터미널에서 실행하면 로컬에서도 동시에 동작합니다.
+
+### 3) 자주 쓰는 URL (API 서버)
+- Swagger UI : http://localhost:8080/swagger-ui.html
+- H2 콘솔 : http://localhost:8080/h2-console  
+  - JDBC URL: `jdbc:h2:file:./data/pointdb;AUTO_SERVER=TRUE`  
+  - User: `sa`
+
+## 7. 사용 순서 예시
+
 ```bash
-java -jar build/libs/point-0.0.1-SNAPSHOT.jar
+# 1. 회원가입
+curl -X POST http://localhost:8080/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123"}'
+
+# 2. 로그인 (Access/Refresh 발급)
+ACCESS=$(curl -s http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123"}' | jq -r '.accessToken')
+
+# 3. 포인트 적립
+curl -X POST http://localhost:8080/api/points/accumulate \
+  -H "Authorization: Bearer $ACCESS" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":1,"amount":1000,"isManual":false}'
 ```
 
-애플리케이션이 실행되면 `http://localhost:8080` 에서 접속할 수 있습니다.
-H2 데이터베이스 콘솔은 `http://localhost:8080/h2-console` 에서 접근 가능합니다.
-- JDBC URL: `jdbc:h2:mem:pointdb`
-- User Name: `sa`
-- Password: (비워두기)
+## 8. 테스트
+
+Gradle `test` 태스크로 전체 테스트를 돌릴 수 있습니다.
+```bash
+./gradlew test
+```
+- `PointServiceTest` : 적립/사용/취소 로직 검증
+- `PointExpirationSchedulerTest` : 만료 배치 검증
+- `AuthServiceTest` : 회원가입 → 로그인 → 재발급 흐름 검증
+
+## 9. 참고 문서
+
+- `HELP.md` : 공식 요구사항
+- `blue-print.md` : 고도화 작업 내역 및 설계 배경
+- `src/main/resources` : ERD/아키텍처 이미지 첨부 위치 (필수 산출물)
