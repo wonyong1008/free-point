@@ -32,19 +32,6 @@
   - `JwtTokenProvider`, `JwtAuthenticationFilter` : Access Token 생성·검증.
   - `SecurityProperties` : 토큰 시크릿/만료 시간을 외부 설정으로 분리.
 
-### ERD (텍스트 버전)
-
-```
-Member (1) ────< RefreshToken
-
-Member (1) ────< PointEarning (점포인트)
-PointEarning (1) ────< PointUsageDetail >──── (1) PointUsage
-PointUsage (1) ────< PointUsageDetail
-
-PointHistory(userId, type, pointKey, balance)
-PointConfig(configKey, configValue)
-```
-
 
 ## 3. 인증 흐름
 
