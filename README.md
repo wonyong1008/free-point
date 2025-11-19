@@ -261,4 +261,4 @@ Gradle `test` 태스크로 전체 테스트를 돌릴 수 있습니다.
 
 ## 9. 참고 문서
 
-- `src/main/resources` : ERD/아키텍처 이미지 첨부 위치
+- `point-api/src/main/resources/docs` : ERD/아키텍처 이미지 첨부 위치
