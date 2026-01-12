@@ -71,7 +71,7 @@ Swagger UI에서 `Authorize` 버튼을 눌러 `Bearer <accessToken>`을 입력�
 |GET|`/balance/{userId}`|현재 잔액 조회|
 |GET|`/history/{userId}`|트랜잭션 이력 조회|
 
-필드/응답 예시는 Swagger (`/swagger-ui.html`)와 `point-core/src/main/java/com/musinsa/point/dto/**`에서 확인할 수 있습니다.
+필드/응답 예시는 Swagger (`/swagger-ui.html`)와 `point-core/src/main/java/com/myproject/point/dto/**`에서 확인할 수 있습니다.
 
 ## 6. 실행 방법
 
